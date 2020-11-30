@@ -6,27 +6,32 @@ class Artery:
     '''
     This class contains the artery's properties 
     '''
-    def __init__(self, xStart, xEnd, nx, beta, dbeta, A0, dA0 ):
+    def __init__(self, xStart, xEnd, nx, beta, A0, degQ=1, degA=1):
         
         # -- Constant data
-        self.beta = beta
-        self.dbeta = dbeta
-        self.A0 = A0
-        self.dA0 = dA0
         self.xStart = xStart
-        self.xEnd = xEnd
-        self.mesh = fe.IntervalMesh(nx,xStart,xEnd)
+        self.xEnd   = xEnd
+        self.mesh   = fe.IntervalMesh(nx,xStart,xEnd)
 
         # -- Finite Element Space Data
-        QE = fe.FiniteElement("Lagrange", cell=self.mesh.ufl_cell(), degree=1)
-        AE = fe.FiniteElement("Lagrange", cell=self.mesh.ufl_cell(), degree=1)
-        ME = fe.MixedElement([QE,AE])
+        QE     = fe.FiniteElement("Lagrange", cell=self.mesh.ufl_cell(), degree=degQ)
+        AE     = fe.FiniteElement("Lagrange", cell=self.mesh.ufl_cell(), degree=degA)
+        ME     = fe.MixedElement([QE,AE])
         self.W = fe.FunctionSpace(self.mesh,ME)
-        (self.w,self.q) = fe.TestFunction(self.W)
+        (self.w,self.q)            = fe.TestFunction(self.W)
         (self.QTrial, self.ATrial) = fe.TrialFunction(self.W)
+
+        # -- Get beta and A
+        self.beta  = fe.interpolate(beta, self.W.sub(1).collapse())
+        self.A0    = fe.interpolate(A0, self.W.sub(1).collapse())
+        self.dbeta = fe.grad( self.beta )[0]
+        self.dA0   = fe.grad( self.A0   )[0]
+
+        # -- Initialize solutions
         self.currentSol  = fe.Function(self.W)
         self.previousSol = fe.Function(self.W)
-        self.getWeakform()
+        fe.assign(self.previousSol.sub(1),self.A0)
+        self.wf = self.getWeakform()
 
 
     def getWeakform(self):
@@ -67,7 +72,6 @@ class Artery:
         wf += dt*BLW[1]*q
         wf *= fe.dx
         self.wf = wf
-
 
 
     def getF(self,Q,A):
@@ -131,10 +135,13 @@ class Artery:
         BLW = [BLW1, BLW2]
         return BLW
 
+
+    # -- Utility functions
     def matMult(self,A,x):
         # -- Multiply 2-by-2 list with 2-by-1 list
         # -- return [A]{x}
         return [ A[0][0]*x[0] + A[0][1]*x[1] , A[1][0]*x[0] + A[1][1]*x[1] ] 
+
 
     def updateSol(self):
         self.previousSol.assign(self.currentSol)

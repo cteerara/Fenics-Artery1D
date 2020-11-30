@@ -8,10 +8,26 @@ plt.rcParams.update({'font.size': 12})
 
 xStart = 0
 xEnd = 1
-nx = 10
-beta = 1
-dbeta = 0 
-A0 = 1
-dA0 = 0
-Arty1 = Artery(xStart, xEnd, nx, beta, dbeta, A0, dA0)
-Arty1.plotMesh()
+L = xEnd - xStart
+nx = 100
+beta = fe.Expression("1",degree=1)
+A0 = fe.Expression("1",degree=1)
+# A0 = 1
+Arty1 = Artery(xStart, xEnd, nx, beta, A0)
+
+
+# sol0 = Arty1.previousSol
+# (Q0,A0) = fe.split(sol0)
+# fe.plot(A0)
+# plt.show()
+
+
+
+# # -- Test 
+# x = np.linspace(xStart, xEnd, nx)
+# fe.plot(Arty1.A0)
+# # fe.plot(Arty1.dA0)
+# plt.show()
+
+
+
