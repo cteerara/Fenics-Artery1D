@@ -20,7 +20,7 @@ xEnd = 15
 L = xEnd - xStart
 nx = 4
 beta = fe.Expression("E*h*pow(pi,0.5)",E=3e6,h=0.05,degree=1)
-A0 = fe.Expression("pi*r*r*x[0]",r=0.5,degree=1)
+A0 = fe.Expression("pi*r*r",r=0.5,degree=1)
 Arty1 = Artery(xStart, xEnd, nx, beta, A0)
 
 # -- Initial condition
@@ -58,8 +58,8 @@ BC_QR = fe.DirichletBC( Arty1.W.sub(0), Qout, bcR )
 
 (AL,AR) = Arty1.getBoundaryA()
 (QL,QR) = Arty1.getBoundaryQ()
-print("AL: %f   AR: %f\n" % (AL,AR) )
-print("QL: %f   QR: %f\n" % (QL,QR) )
+print("AL: %f   AR: %f" % (AL,AR) )
+print("QL: %f   QR: %f" % (QL,QR) )
 
 
 

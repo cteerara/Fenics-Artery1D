@@ -13,8 +13,6 @@ def Allgatherv(a,comm):
     offsets[1:] = np.cumsum(sizes)[0:nPE-1]
     offsets.astype(int)
     a_gathered = np.zeros( int(np.sum(sizes)) )
-    print(sizes)
-    print(offsets)
     comm.Allgatherv( a, [a_gathered, sizes, offsets, MPI.DOUBLE]  )
     return a_gathered
 

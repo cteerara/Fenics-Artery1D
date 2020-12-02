@@ -28,8 +28,10 @@ class Artery:
         (self.w,self.q)            = fe.TestFunction(self.W)
         (self.QTrial, self.ATrial) = fe.TrialFunction(self.W)
         # -- Coordinate values
-        self.coords = self.getCoords()
-        print("Rank:",self.rank,"coords",self.coords)
+        x = fe.interpolate(fe.Expression("x[0]", degree=1), self.W.sub(0).collapse())
+        self.coords = self.gatherField(x)
+        print("rank",self.rank,"coord",self.coords)
+        # sys.exit()
         # -- Get beta and A
         self.beta  = fe.interpolate(beta, self.W.sub(1).collapse())
         self.A0    = fe.interpolate(A0, self.W.sub(1).collapse())
@@ -40,6 +42,11 @@ class Artery:
         self.previousSol = fe.Function(self.W)
         fe.assign(self.previousSol.sub(1),self.A0)
         self.wf = self.getWeakform()
+
+        x2 = fe.interpolate(fe.Expression("x[0]*x[0]", degree=1), self.W.sub(0).collapse())
+        print(self.interpolate(x2,10))
+
+
 
         # self.getBoundaryChar_Pos()
         # self.getBoundaryChar_Neg()
@@ -65,17 +72,41 @@ class Artery:
             fieldR = fieldArr[-1]
         self.comm.Allgather( np.array([fieldL],dtype=np.float64), FGL  )
         self.comm.Allgather( np.array([fieldR],dtype=np.float64), FGR  )
-        return [ FGL[0], FGR[-1]   ]
+        return [ FGL[0], FGR[-1] ]
 
 
     # -- Get Coordinate values
-    def getCoords(self):
-        x = fe.interpolate(fe.Expression("x[0]", degree=1), self.W.sub(0).collapse()).compute_vertex_values()
+    def gatherField(self,field):
+        field_vv = field.compute_vertex_values()
         if self.rank == self.nPE-1:
-            x_send = x[0:]
+            field_send = field_vv[0:]
         else:
-            x_send = x[0:len(x)-1]
-        return myMPI.Allgatherv(x_send,self.comm)
+            field_send = field_vv[0:len(field_vv)-1]
+        return myMPI.Allgatherv(field_send,self.comm)
+
+    # -- Interpolate
+    def interpolate(self,field,pt):
+        ''' Performs linear interpolation of a value at point pt on field '''
+        if pt < self.coords[0] or pt > self.coords[-1]:
+            raise Exception('Point out of bound.')
+        field_gathered = self.gatherField(field) 
+        print("rank:",self.rank,"field:",field_gathered)
+        for i in range(0,len(field_gathered)):
+            if pt < self.coords[i]:
+                break
+        f1 = field_gathered[i-1]
+        f2 = field_gathered[i]
+        x1 = self.coords[i-1]
+        x2 = self.coords[i]
+        print(self.rank,"f",f1,f2)
+        print(self.rank,"x",x1,x2)
+        print(self.rank,"pt",pt)
+        print(self.rank,"i",i)
+        a = (f2-f1)/(x2-x1)
+        b = f1-a*x1
+        return a*pt+b
+
+
 
 
     # -- Get characteristics
