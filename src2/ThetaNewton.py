@@ -62,7 +62,7 @@ theta = 0.5
 nt = 1000
 T = 2*0.165
 nt = 1e3
-time = np.linspace(0,T/2+(0.25-0.165),int(nt))
+time = np.linspace(0,(T/2+(0.25-0.165)),int(nt))
 dt = time[1]-time[0]
 time = np.array(time)
 Pin = 2e4*np.sin(2*np.pi*time/T) * np.heaviside(T/2-time,1)
@@ -75,7 +75,8 @@ Ain = (Pin*A0/beta+np.sqrt(A0))**2;
 ne = 2**7
 L = 15
 mesh = fe.IntervalMesh(int(ne),0,L)
-degQ = 1 ; degA = 1;
+degQ = 2 
+degA = 2
 QE     = fe.FiniteElement("Lagrange", cell=mesh.ufl_cell(), degree=degQ)
 AE     = fe.FiniteElement("Lagrange", cell=mesh.ufl_cell(), degree=degA)
 ME     = fe.MixedElement([AE,QE])
