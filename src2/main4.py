@@ -50,7 +50,7 @@ dv2 = fe.grad(v2)[0]
 U0 = fe.Function(V)
 U0.assign(fe.Expression( ('A0','q0'), degree=1, A0=Sini, q0=0 ))
 Un = fe.Function(V)
-Un.assign(fe.Expression( ('A0','x[0]'), degree=1, A0=Sini, q0=0 ))
+Un.assign(fe.Expression( ('A0','0'), degree=1, A0=Sini, q0=0 ))
 ndof = len(np.array(Un.vector()))
 Ao = U0[0]
 Qo = U0[1]
@@ -135,6 +135,9 @@ dU = fe.Function(V)
 tid = 0
 itMax = 100
 tol = 1e-4
+print("beta",beta)
+print("rho",rho)
+print("A0",Sini)
 for t in time: # Time loop
     for NR_it in range(0,itMax): # Newton-Raphson loop
 
@@ -144,15 +147,26 @@ for t in time: # Time loop
         (SR0, QR0) = U0.split(deepcopy=True)
         QR0 = QR0.compute_vertex_values()[-1]
         SR0 = SR0.compute_vertex_values()[-1]
+
         c = np.sqrt(beta/(2*rho*Sini))*SR0**(1./4.)
         lamR0 = alpha*QR0/SR0 + np.sqrt(c**2+alpha*(alpha-1)*QR0**2/SR0**2)
         xW1R = fe.Point(L-lamR0*dt,0,0)
+
         (AR,QR) = Un.split(deepcopy=True)
         AR = AR(xW1R)
         QR = QR(xW1R)
         W1R = QR/AR + 4*np.sqrt(beta/(2*rho*Sini))*AR**(1./4.)
         SRBC = (2*rho*Sini/beta)**2 * ((W1R-W2R)/8)**4
         QRBC = SRBC*(W1R+W2R)/2
+
+        # print("AR",AR)
+        # print("QR",QR)
+        # print("xW1R",xW1R.x())
+        # print("W1R",W1R)
+        # print("W2R",W2R)
+        # print("SRBC",SRBC)
+        # print("QRBC",QRBC)
+        # sys.exit()
 
         # Apply boundary conditions
         (AR,QR) = Un.split(deepcopy=True)
