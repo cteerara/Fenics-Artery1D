@@ -3,6 +3,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import sys
 from Artery_class import *
+from Global import *
 plt.rcParams.update({'font.size': 12})
 
 def str2lst(strs):
@@ -16,8 +17,6 @@ def str2lst(strs):
     return lst
 
 # Artyp = Artery(L, ne, r0, Q0,   E, h0, theta, dt, degA=degA,degQ=degQ)
-
-
 class Artery_Network:
     ''' Class defines the artery network and its connectivity '''
     def __init__(self, inputFile, dt, theta):
@@ -36,6 +35,23 @@ class Artery_Network:
             degQ = self.paramDict["degQ"][i]
             Arty = Artery(L,ne,r0,Q0,E,h0,theta,dt,degA=degA,degQ=degQ)
             self.Arteries.append(Arty)
+
+        self.getNRSystem([1,2,3],[4,5,6])
+
+    
+    def getNRSystem(self,A,Q):
+        n = len(A)-1
+        Ai = A[1:] ; Qi = Q[1:] # There are n members in these arrays
+        K = np.zeros( (2*n+2,2*n+2) )
+        R = np.zeros( 2*n+2 )
+        Ap = A[0] ; Qp = Q[0]
+        K[0,0] = 1
+        K[0,1:n+1] = -1
+        K[1:n+1,0] = Qp/Ap**2
+        K[n+1,0] = alpha/Ap
+
+
+
 
 
     def getParameters(self):
@@ -100,6 +116,6 @@ class Artery_Network:
 
 
 inputFile = 'testInput.in'
-A = Artery_Network(inputFile)
+A = Artery_Network(inputFile,1,1)
 # print(A.numVessels, A.connectivity, A.vesselIDs)
 

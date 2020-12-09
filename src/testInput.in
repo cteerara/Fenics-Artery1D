@@ -8,15 +8,19 @@
 # if the vessel does not have daughter, you can omit it from the input
 
 Connectivity : 0 : 1 
+Connectivity : 1 : 4,5
+Connectivity : 2 : 6
+Connectivity : 3 : 7,8
 
 # rho = 1
 # nu = 0.035
-Value : L  = 15,15
-Value : ne = 128,128
-Value : r0 = 0.5,0.5
-Value : Q0 = 0,0
-Value : E  = 3e6,3e6
-Value : h0 = 0.05,0.05
-Value : degA = 1,1
-Value : degQ = 1,1
+# Arteries     0    , 1    , 2    , 3    , 4    , 5    , 6    , 7    , 8
+Value : L    = 15   , 15   , 15   , 15   , 15   , 15   , 15   , 15   , 15
+Value : ne   = 128  , 128  , 128  , 128  , 128  , 128  , 128  , 128  , 128
+Value : r0   = 0.5  , 0.5  , 0.5  , 0.5  , 0.5  , 0.5  , 0.5  , 0.5  , 0.5
+Value : Q0   = 0    , 0    , 0    , 0    , 0    , 0    , 0    , 0    , 0
+Value : E    = 3e6  , 3e6  , 3e6  , 3e6  , 3e6  , 3e6  , 3e6  , 3e6  , 3e6
+Value : h0   = 0.05 , 0.05 , 0.05 , 0.05 , 0.05 , 0.05 , 0.05 , 0.05 , 0.05
+Value : degA = 1    , 1    , 1    , 1    , 1    , 1    , 1    , 1    , 1
+Value : degQ = 1    , 1    , 1    , 1    , 1    , 1    , 1    , 1    , 1
 
