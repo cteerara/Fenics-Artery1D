@@ -100,16 +100,21 @@ class Artery:
         Q = A * (W1+W2)/2
         return (A,Q)
 
-
-
+    def getEigenvalues(self,A,Q):
+        c = self.getWavespeed(A)
+        lam1 = alpha*Q/A + np.sqrt( c**2 + alpha*(alpha-1)*(Q/A)**2 )
+        lam2 = alpha*Q/A - np.sqrt( c**2 + alpha*(alpha-1)*(Q/A)**2 )
+        return (lam1,lam2)
 
     def solve(self):
 
+        # -- Define boundaries
         def bcL(x, on_boundary):
             return on_boundary and x[0] < fe.DOLFIN_EPS
         def bcR(x, on_boundary):
             return on_boundary and self.L-x[0] < fe.DOLFIN_EPS
 
+        # -- Define initial conditions
         self.AinBC  = fe.Expression("Ain"  , Ain =self.A0 , degree=1)
         self.AoutBC = fe.Expression("Aout" , Aout=self.A0 , degree=1)
         self.QoutBC = fe.Expression("Qout" , Qout=0       , degree=1) 
@@ -128,11 +133,10 @@ class Artery:
         for t in self.time:
 
             # -- Get nonreflecting bc
-            SR0 = self.U0.compute_vertex_values()[self.ne]
+            AR0 = self.U0.compute_vertex_values()[self.ne]
             QR0 = self.U0.compute_vertex_values()[2*self.ne+1]
-            c = self.getWavespeed(SR0)
-            # c = np.sqrt(self.beta/(2*rho*self.A0))*SR0**(1./4.)
-            lamR0 = alpha*QR0/SR0 + np.sqrt(c**2+alpha*(alpha-1)*(QR0/SR0)**2)
+            c = self.getWavespeed(AR0)
+            (lamR0,tmp) = self.getEigenvalues(AR0,QR0)
             xW1R = fe.Point(self.L-lamR0*self.dt,0,0)
             (AR,QR) = self.U0.split()
             AR = AR(xW1R)
