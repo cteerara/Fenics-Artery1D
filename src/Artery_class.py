@@ -109,6 +109,18 @@ class Artery:
             raise ValueError('LeftOrRight must be either "left" or "right"')
         return (A,Q)
 
+    def getNoReflectionBC(self):
+        (AR0,QR0) = self.getBoundaryAQ("right")
+        c = self.getWavespeed(AR0)
+        (lamR0,tmp) = self.getEigenvalues(AR0,QR0)
+        xW1R = fe.Point(self.L-lamR0*self.dt,0,0)
+        (AR,QR) = self.U0.split()
+        AR = AR(xW1R)
+        QR = QR(xW1R)
+        (W1R,tmp) = self.getCharacteristics(AR,QR)
+        (ARBC,QRBC) = self.getAQfromChar(W1R,self.W2_initial)
+        return (ARBC,QRBC)
+
 
     def solve(self, Ain=None , Qin=None , Aout=None , Qout=None):
 
