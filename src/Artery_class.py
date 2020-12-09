@@ -9,11 +9,12 @@ class Artery:
     '''
     This class contains the artery's properties 
     '''
-    def __init__(self, L, ne, r0, Q0, E, h0, degA=1, degQ=1):
+    def __init__(self, L, ne, r0, Q0, E, h0, theta, dt,degA=1, degQ=1):
 
         # -- Setup domain
         self.L = L
         self.ne = ne
+        self.dt = dt
         self.mesh = fe.IntervalMesh( ne, 0, L )
         QE = fe.FiniteElement("Lagrange", cell=self.mesh.ufl_cell(), degree=degQ)
         AE = fe.FiniteElement("Lagrange", cell=self.mesh.ufl_cell(), degree=degA)
@@ -43,6 +44,7 @@ class Artery:
         self.du02 = fe.grad(self.u02)[0]
         self.dun1 = fe.grad(self.un1)[0] 
         self.dun2 = fe.grad(self.un2)[0]
+        (self.W1_initial,self.W2_initial) = self.getCharacteristics(self.A0,self.Q0) 
 
         # -- Setup weakform terms
         B0     = self.getB(self.u01, self.u02)
@@ -52,18 +54,6 @@ class Artery:
         HdUdz0 = matMult(H0,[self.du01, self.du02])
         HdUdzn = matMult(Hn,[self.dun1, self.dun2])
 
-        # -- Setup initial condition
-        theta = 0.5
-        nt = 1000
-        self.nt = nt
-        T = 2*0.165
-        time = np.linspace(0,(T/2+(0.25-0.165)),int(nt))
-        dt = time[1]-time[0]
-        self.time = time
-        self.dt = dt
-        time = np.array(time)
-        Pin = 2e4*np.sin(2*np.pi*time/T) * np.heaviside(T/2-time,1)
-        self.Ain = (Pin*self.A0/self.beta+np.sqrt(self.A0))**2;
 
         # -- Setup weakform
         wf  = -self.un1*self.v1 - self.un2*self.v2
@@ -101,12 +91,26 @@ class Artery:
         return (A,Q)
 
     def getEigenvalues(self,A,Q):
+        ''' Return eigenvalues of H with input values A and Q '''
         c = self.getWavespeed(A)
         lam1 = alpha*Q/A + np.sqrt( c**2 + alpha*(alpha-1)*(Q/A)**2 )
         lam2 = alpha*Q/A - np.sqrt( c**2 + alpha*(alpha-1)*(Q/A)**2 )
         return (lam1,lam2)
 
-    def solve(self):
+    def getBoundaryAQ(self,LeftOrRight):
+        ''' Return boundary A and Q for current solution field U0 '''
+        if LeftOrRight.lower() == 'left':
+            A = self.U0.compute_vertex_values()[0]
+            Q = self.U0.compute_vertex_values()[self.ne+1]
+        elif LeftOrRight.lower() == 'right':
+            A = self.U0.compute_vertex_values()[self.ne]
+            Q = self.U0.compute_vertex_values()[2*self.ne+1]
+        else:
+            raise ValueError('LeftOrRight must be either "left" or "right"')
+        return (A,Q)
+
+
+    def solve(self, Ain=None , Qin=None , Aout=None , Qout=None):
 
         # -- Define boundaries
         def bcL(x, on_boundary):
@@ -115,50 +119,37 @@ class Artery:
             return on_boundary and self.L-x[0] < fe.DOLFIN_EPS
 
         # -- Define initial conditions
-        self.AinBC  = fe.Expression("Ain"  , Ain =self.A0 , degree=1)
-        self.AoutBC = fe.Expression("Aout" , Aout=self.A0 , degree=1)
-        self.QoutBC = fe.Expression("Qout" , Qout=0       , degree=1) 
-        bc1 = fe.DirichletBC(self.V_A, self.AinBC  , bcL)
-        bc2 = fe.DirichletBC(self.V_A, self.AoutBC , bcR)
-        bc3 = fe.DirichletBC(self.V_Q, self.QoutBC , bcR)
-        bcs = [bc1, bc2, bc3]
-        (tmp,W2R) = self.getCharacteristics(self.A0,self.Q0) 
-        
+        bcs = []
+        if Ain is not None:
+            bc_Ain  = fe.DirichletBC(self.V_A, fe.Expression("Ain" ,Ain=Ain  ,degree=1) , bcL)
+            bcs.append(bc_Ain)
+        if Qin is not None:
+            bc_Qin  = fe.DirichletBC(self.V_Q, fe.Expression("Qin" ,Qin=Qin  ,degree=1) , bcL)
+            bcs.append(bc_Qin)
+        if Aout is not None:
+            bc_Aout = fe.DirichletBC(self.V_A, fe.Expression("Aout",Aout=Aout,degree=1) , bcR) 
+            bcs.append(bc_Aout)
+        if Qout is not None:
+            bc_Qout = fe.DirichletBC(self.V_Q, fe.Expression("Qout",Qout=Qout,degree=1) , bcR)
+            bcs.append(bc_Qout)
+
         # -- Setup problem
         problem = fe.NonlinearVariationalProblem(self.wf, self.Un, bcs, J=self.J)
-        self.solver = fe.NonlinearVariationalSolver(problem)
+        solver = fe.NonlinearVariationalSolver(problem)
 
         # -- Solve
-        tid = 0
-        for t in self.time:
+        solver.solve()
+        self.U0.assign(self.Un)
 
-            # -- Get nonreflecting bc
-            AR0 = self.U0.compute_vertex_values()[self.ne]
-            QR0 = self.U0.compute_vertex_values()[2*self.ne+1]
-            c = self.getWavespeed(AR0)
-            (lamR0,tmp) = self.getEigenvalues(AR0,QR0)
-            xW1R = fe.Point(self.L-lamR0*self.dt,0,0)
-            (AR,QR) = self.U0.split()
-            AR = AR(xW1R)
-            QR = QR(xW1R)
-            (W1R,tmp) = self.getCharacteristics(AR,QR)
-            (ARBC, QRBC) = self.getAQfromChar(W1R,W2R)
-
-            # -- Apply boundary conditions
-            self.AinBC.Ain   = self.Ain[tid]
-            self.AoutBC.Aout = ARBC
-            self.QoutBC.Qout = QRBC
-            self.solver.solve()
-            self.U0.assign(self.Un)
-            (Asol,Qsol) = self.Un.split()
-            print('Timestep %d out of %d completed' % (tid,self.nt))
-            tid += 1
+    def plotSol(self,func):
+        (Asol,Qsol) = self.U0.split()
+        if func == "A":
+            fe.plot(Asol)
+        elif func == "Q":
+            fe.plot(Qsol)
+        else:
+            raise ValueError('input can either be "Q" or "A"')
         
-            # -- Plot for diagnostics
-            plt.plot(Asol.compute_vertex_values())
-            plt.ylim([0.6,1.1])
-            plt.pause(0.01)
-            plt.cla()
         
         
 
