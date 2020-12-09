@@ -28,21 +28,78 @@ beta = E*h0*np.sqrt(np.pi)
 Ain = (Pin*A0/beta+np.sqrt(A0))**2;
 
 
-A = Artery(L, ne, r0, Q0,    E, h0, theta, dt, degA=1,degQ=1)
-# Arty1 = Artery(L, ne, r0, Q0, 10*E, h0, theta, dt, degA=1,degQ=1)
+Artyp = Artery(L, ne, r0, Q0,    E, h0, theta, dt, degA=1,degQ=1)
+Arty1 = Artery(L, ne, r0, Q0, 2*E, h0, theta, dt, degA=1,degQ=1)
+
+
+# -- Constants
+beta_p = Artyp.beta
+beta_1 = Arty1.beta
+A0_p   = Artyp.A0
+A0_1   = Arty1.A0
+gamma_p= beta_p/A0_p
+gamma_1= beta_1/A0_1
+sigma_p= 4*np.sqrt(beta_p/(2*rho*A0_p))
+sigma_1= 4*np.sqrt(beta_1/(2*rho*A0_1))
+# -- Stiffness matrix
+K = np.zeros((4,4))
+R = np.zeros(4)
 
 tid = 0
 for t in time:
+# for i in range(0,2):
+
+    # -- Get boundary conditions for the problem.
+    # Here we are using a segmented domain. The right segment has higher young's modulus
+    # -- Initial guess
+    (A_p,Q_p) = Artyp.getBoundaryAQ("right")
+    (A_1,Q_1) = Arty1.getBoundaryAQ("left")
+    # Here I am getting the characteristics at the previous timestep 
+    # from the compatibility condition via characteristic extrapolation
+    # Positive characteristic on the right for parent vessel
+    # Negative characteristic on the left for daughter vessel
+    (lam1_p, lam2_p) = Artyp.getEigenvalues(A_p,Q_p)
+    (lam1_1, lam2_1) = Arty1.getEigenvalues(A_1,Q_1)
+    (W1_p, W2_p) = Artyp.getCharacteristics( Artyp.getAatPoint( Artyp.L - lam1_p*Artyp.dt ) , Artyp.getQatPoint( Artyp.L - lam1_p*Artyp.dt ) )
+    (W1_1, W2_1) = Arty1.getCharacteristics( Arty1.getAatPoint(         - lam2_1*Arty1.dt ) , Arty1.getQatPoint(         - lam2_1*Arty1.dt ) )
+    # -- Inside NR loop
+    NR_itmax = 1000
+    tol = 1e-5
+    for NR_it in range(0,NR_itmax):
+        ptp = gamma_p*( np.sqrt(A_p) - np.sqrt(A0_p) ) + 1/2*(Q_p/A_p)**2
+        pt1 = gamma_1*( np.sqrt(A_1) - np.sqrt(A0_1) ) + 1/2*(Q_1/A_1)**2
+        K[0,0]=1 ; K[0,1]=-1 ; K[1,0]=Q_p/A_p**2 ; K[1,1]=-Q_1/A_1**2
+        K[1,2]=-Q_p**2/A_p**3+gamma_p/(2*np.sqrt(A_p)) ; K[1,3]=Q_1**2/A_1**2-gamma_1/(2*np.sqrt(A_1))
+        K[2,0]=alpha*A_p ; K[2,2]=-alpha*Q_p/A_p**2+sigma_p/(4*A_p**(3/4))
+        K[3,1]=alpha/A_1 ; K[3,3]=-alpha*Q_1/A_1**2-sigma_1/(4*A_1**(3/4))
+        R[0] = Q_p - Q_1
+        R[1] = ptp - pt1 
+        R[2] = alpha*Q_p/A_p + sigma_p*A_p**(1/4) - W1_p
+        R[3] = alpha*Q_1/A_1 - sigma_1*A_1**(1/4) - W2_1
+        print("Time step: %d. NR iteration: %d. Residue = %f" % (tid, NR_it, np.linalg.norm(R)))
+        if np.linalg.norm(R) < tol:
+            break
+        dU = np.linalg.solve(K,-R )
+        Q_p += dU[0] ; Q_1 += dU[1]
+        A_p += dU[2] ; A_1 += dU[3]
 
 
-    (ARBC,QRBC) = A.getNoReflectionBC()
+    (ANoReflect,QNoReflect) = Arty1.getNoReflectionBC()
+    Artyp.solve(Ain=Ain[tid],Aout=A_p,Qout=Q_p)
+    Arty1.solve(Ain=A_1, Qin=Q_1, Aout = ANoReflect, Qout = QNoReflect)
 
-    A.solve(Ain=Ain[tid],Aout=ARBC,Qout=QRBC)
-    A.plotSol("A")
+    Asol_p = Artyp.getSol("A").compute_vertex_values()
+    Asol_1 = Arty1.getSol("A").compute_vertex_values()
+    Asol = np.hstack( (Asol_p, Asol_1[1:])  )
+    
+
+    # Artyp.plotSol("A")
+    plt.plot(Asol)
     plt.ylim([0.6,1.1])
     plt.pause(0.01)
     plt.cla()
-    print("Timestep: %d out of %d completed" % (tid,nt))
+    # print("Timestep: %d out of %d completed" % (tid,nt))
+
     tid += 1
 
 

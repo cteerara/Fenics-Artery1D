@@ -81,8 +81,8 @@ class Artery:
 
     def getCharacteristics(self,A,Q):
         c  = self.getWavespeed(A)
-        W1 = Q/A + 4*c
-        W2 = Q/A - 4*c
+        W1 = alpha*Q/A + 4*c
+        W2 = alpha*Q/A - 4*c
         return (W1,W2)
 
     def getAQfromChar(self,W1,W2):
@@ -153,6 +153,37 @@ class Artery:
         solver.solve()
         self.U0.assign(self.Un)
 
+    # ------------------------------------------
+    # --- Getters and Diagnostics --------------
+    # ------------------------------------------
+
+    def getAatPoint(self,x):
+        ''' Return A at point x '''
+        pt = fe.Point(x,0,0)
+        (Asol,Qsol) = self.U0.split()
+        return Asol(pt)
+
+    def getAatPoint(self,x):
+        ''' Return A at point x '''
+        pt = fe.Point(x,0,0)
+        (Asol,Qsol) = self.U0.split()
+        return Asol(pt)
+    def getQatPoint(self,x):
+        ''' Return Q at point x '''
+        pt = fe.Point(x,0,0)
+        (Asol,Qsol) = self.U0.split()
+        return Qsol(pt)
+
+
+    def getSol(self,func):
+        (Asol,Qsol) = self.U0.split()
+        if func == "A":
+            return Asol
+        elif func == "Q":
+            return Qsol
+        else:
+            raise ValueError('input can either be "Q" or "A"')
+ 
     def plotSol(self,func):
         (Asol,Qsol) = self.U0.split()
         if func == "A":
