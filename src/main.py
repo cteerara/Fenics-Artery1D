@@ -37,7 +37,7 @@ degA = 1
 degQ = 1
 
 Artyp = Artery(L, ne, r0, Q0,   E, h0, theta, dt, degA=degA,degQ=degQ)
-Arty1 = Artery(L, ne, r0, Q0, 1*E, h0, theta, dt, degA=degA,degQ=degQ)
+Arty1 = Artery(L, ne, r0, Q0, 1.5*E, h0, theta, dt, degA=degA,degQ=degQ)
 
 # -- Constants
 beta_p = Artyp.beta
@@ -48,6 +48,7 @@ gamma_p= beta_p/A0_p
 gamma_1= beta_1/A0_1
 sigma_p= 4*np.sqrt(beta_p/(2*rho*A0_p))
 sigma_1= 4*np.sqrt(beta_1/(2*rho*A0_1))
+
 # -- Stiffness matrix
 K = np.zeros((4,4))
 R = np.zeros(4)
@@ -80,7 +81,7 @@ for t in time:
         K[1,1]=-Q_1/A_1**2
         K[1,2]=-Q_p**2/A_p**3+gamma_p/(2*np.sqrt(A_p))
         K[1,3]=Q_1**2/A_1**2-gamma_1/(2*np.sqrt(A_1))
-        K[2,0]=alpha*A_p
+        K[2,0]=alpha/A_p
         K[2,2]=-alpha*Q_p/A_p**2+sigma_p/(4*A_p**(3/4))
         K[3,1]=alpha/A_1
         K[3,3]=-alpha*Q_1/A_1**2-sigma_1/(4*A_1**(3/4))
@@ -88,6 +89,8 @@ for t in time:
         R[1] = ptp - pt1 
         R[2] = alpha*Q_p/A_p + sigma_p*A_p**(1/4) - W1_p
         R[3] = alpha*Q_1/A_1 - sigma_1*A_1**(1/4) - W2_1
+        # print(K)
+        # sys.exit('')
         print("Time step: %d. NR iteration: %d. Residue = %f" % (tid, NR_it, np.linalg.norm(R)))
         if np.linalg.norm(R) < tol:
             break
