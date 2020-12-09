@@ -73,8 +73,8 @@ Ain = (Pin*A0/beta+np.sqrt(A0))**2;
 ne = 2**7
 L = 15
 mesh = fe.IntervalMesh(int(ne),0,L)
-degQ = 2 
-degA = 2
+degQ = 1 
+degA = 1
 QE     = fe.FiniteElement("Lagrange", cell=mesh.ufl_cell(), degree=degQ)
 AE     = fe.FiniteElement("Lagrange", cell=mesh.ufl_cell(), degree=degA)
 ME     = fe.MixedElement([AE,QE])
@@ -144,7 +144,7 @@ for t in time:
     QR = QR(xW1R)
     W1R = QR/AR + 4*np.sqrt(beta/(2*rho*A0))*AR**(1./4.)
     SRBC = (2*rho*A0/beta)**2 * ( (W1R-W2R)/8 )**4
-    QRBC = SRBC + (W1R+W2R)/2
+    QRBC = SRBC *(W1R+W2R)/2
     AinBC.Ain   = Ain[tid]
     AoutBC.Aout = SRBC
     QoutBC.Qout = QRBC
@@ -152,8 +152,9 @@ for t in time:
     U0.assign(Un)
     (Asol,Qsol) = Un.split()
 
-    plt.plot(Asol.compute_vertex_values())
-    plt.ylim([0.5,1.1])
+    plt.plot(Qsol.compute_vertex_values())
+    # plt.ylim([0.5,1.1])
+    plt.ylim([0,50])
     plt.pause(0.01)
     plt.cla()
     # np.save('output/ThetaNewton_out/A_'+str(tid)+'.npy',Asol.compute_vertex_values())
@@ -161,3 +162,13 @@ for t in time:
 
     print('Timestep %d out of %d completed' % (tid,nt))
     tid += 1
+
+    print("c=",c)
+    print("lamR0=",lamR0)
+    print("xW1R=",xW1R.x())
+    print("AR=",AR)
+    print("QR=",QR)
+    print("W1R=",W1R)
+    print("SRBC=",SRBC)
+    print("QRBC=",QRBC)
+    print("Ain[0]=",Ain[tid])
