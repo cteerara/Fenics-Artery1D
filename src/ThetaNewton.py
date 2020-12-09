@@ -69,8 +69,6 @@ Pin = 2e4*np.sin(2*np.pi*time/T) * np.heaviside(T/2-time,1)
 Ain = (Pin*A0/beta+np.sqrt(A0))**2;
 
 
-
-
 # -- Spatial domain
 ne = 2**7
 L = 15
