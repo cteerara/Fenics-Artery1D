@@ -19,6 +19,7 @@ Q0 = 0
 # -- Time values
 theta = 0.5
 nt = 1000
+
 T = 2*0.165
 time = np.linspace(0,(T/2+(0.25-0.165)),int(nt))
 dt = time[1]-time[0]
@@ -28,9 +29,15 @@ beta = E*h0*np.sqrt(np.pi)
 Ain = (Pin*A0/beta+np.sqrt(A0))**2;
 
 
-Artyp = Artery(L, ne, r0, Q0,    E, h0, theta, dt, degA=1,degQ=1)
-Arty1 = Artery(L, ne, r0, Q0, 2*E, h0, theta, dt, degA=1,degQ=1)
+# plt.plot(Ain)
+# plt.show()
+# sys.exit('')
 
+degA = 1
+degQ = 1
+
+Artyp = Artery(L, ne, r0, Q0,   E, h0, theta, dt, degA=degA,degQ=degQ)
+Arty1 = Artery(L, ne, r0, Q0, 1*E, h0, theta, dt, degA=degA,degQ=degQ)
 
 # -- Constants
 beta_p = Artyp.beta
@@ -48,7 +55,6 @@ R = np.zeros(4)
 tid = 0
 for t in time:
 # for i in range(0,2):
-
     # -- Get boundary conditions for the problem.
     # Here we are using a segmented domain. The right segment has higher young's modulus
     # -- Initial guess
@@ -68,10 +74,16 @@ for t in time:
     for NR_it in range(0,NR_itmax):
         ptp = gamma_p*( np.sqrt(A_p) - np.sqrt(A0_p) ) + 1/2*(Q_p/A_p)**2
         pt1 = gamma_1*( np.sqrt(A_1) - np.sqrt(A0_1) ) + 1/2*(Q_1/A_1)**2
-        K[0,0]=1 ; K[0,1]=-1 ; K[1,0]=Q_p/A_p**2 ; K[1,1]=-Q_1/A_1**2
-        K[1,2]=-Q_p**2/A_p**3+gamma_p/(2*np.sqrt(A_p)) ; K[1,3]=Q_1**2/A_1**2-gamma_1/(2*np.sqrt(A_1))
-        K[2,0]=alpha*A_p ; K[2,2]=-alpha*Q_p/A_p**2+sigma_p/(4*A_p**(3/4))
-        K[3,1]=alpha/A_1 ; K[3,3]=-alpha*Q_1/A_1**2-sigma_1/(4*A_1**(3/4))
+        K[0,0]=1
+        K[0,1]=-1
+        K[1,0]=Q_p/A_p**2
+        K[1,1]=-Q_1/A_1**2
+        K[1,2]=-Q_p**2/A_p**3+gamma_p/(2*np.sqrt(A_p))
+        K[1,3]=Q_1**2/A_1**2-gamma_1/(2*np.sqrt(A_1))
+        K[2,0]=alpha*A_p
+        K[2,2]=-alpha*Q_p/A_p**2+sigma_p/(4*A_p**(3/4))
+        K[3,1]=alpha/A_1
+        K[3,3]=-alpha*Q_1/A_1**2-sigma_1/(4*A_1**(3/4))
         R[0] = Q_p - Q_1
         R[1] = ptp - pt1 
         R[2] = alpha*Q_p/A_p + sigma_p*A_p**(1/4) - W1_p
@@ -96,7 +108,7 @@ for t in time:
     # Artyp.plotSol("A")
     plt.plot(Asol)
     plt.ylim([0.6,1.1])
-    plt.pause(0.01)
+    plt.pause(1e-6)
     plt.cla()
     # print("Timestep: %d out of %d completed" % (tid,nt))
 
