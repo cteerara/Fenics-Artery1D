@@ -7,7 +7,7 @@
 # parent vessels must have ID lower than all the daughter vessels
 # if the vessel does not have daughter, you can omit it from the input
 
-Connectivity : 0 : 1 
+Connectivity : 0 : 1,2,3 
 Connectivity : 1 : 4,5
 Connectivity : 2 : 6
 Connectivity : 3 : 7,8
