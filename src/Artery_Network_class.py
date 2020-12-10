@@ -254,8 +254,9 @@ Ainlet = (Pin*A0/beta+np.sqrt(A0))**2;
 degA = 1
 degQ = 1
 
-inputFile = 'TwoSection.in'
 # inputFile = "testInput.in"
+# inputFile = 'TwoSection.in'
+inputFile = 'yBifurcation.in'
 ArteryNetwork = Artery_Network(inputFile,dt,theta)
 
 tid = 0
@@ -263,23 +264,40 @@ tid = 0
 # for i in range(0,nt):
 for t in time:
     (Ain,Qin,Aout,Qout) = ArteryNetwork.getBoundaryConditions(Ainlet[tid])
-    # print("Ain ",Ain)
-    # print("Aout",Aout)
-    # print("Qin ",Qin)
-    # print("Qout",Qout)
-
     ArteryNetwork.solve( Ain, Aout, Qin, Qout )
 
-    Asol_p = ArteryNetwork.Arteries[0].getSol("A").compute_vertex_values()
-    Asol_1 = ArteryNetwork.Arteries[1].getSol("A").compute_vertex_values()
-    Asol = np.hstack( (Asol_p, Asol_1[1:]) )
+    print("Solving at timestep %d" % (tid))
+
+    
+    if tid % 10 == 0:
+        plt.subplot(3,1,1)
+        Asol_0 = ArteryNetwork.Arteries[0].getSol("A").compute_vertex_values()
+        plt.plot(Asol_0)
+        plt.title("Vessel 0 tid="+str(tid))
+        plt.ylim([0.6,1.1])
+    
+        plt.subplot(3,1,2)
+        Asol_1 = ArteryNetwork.Arteries[1].getSol("A").compute_vertex_values()
+        plt.plot(Asol_1)
+        plt.title("Vessel 1 tid="+str(tid) )
+        plt.ylim([0.6,1.1])
+    
+        plt.subplot(3,1,3)
+        Asol_2 = ArteryNetwork.Arteries[2].getSol("A").compute_vertex_values()
+        plt.plot(Asol_2)
+        plt.title("Vessel 2 tid="+str(tid))
+        plt.ylim([0.6,1.1])
+        plt.pause(1e-6)
+        
+    plt.clf()
 
 
 
-    plt.plot(Asol)
-    plt.ylim([0.6,1.1])
-    plt.pause(1e-6)
-    plt.cla()
+    # plt.plot(Asol)
+    # plt.ylim([0.6,1.1])
+    # plt.pause(1e-6)
+    # plt.cla()
+
     tid +=1
 
 
