@@ -13,10 +13,10 @@
 
 Connectivity : 0 : 1,2 
 Value : L  = 15,15,15
-Value : ne = 128,128,128
+Value : ne = 256,256,256
 Value : r0 = 0.5,0.5,0.5
 Value : Q0 = 0,0,0
-Value : E  = 3e6,3e6,3e6
+Value : E  = 9e6,3e6,3e6
 Value : h0 = 0.05,0.05,0.05
 Value : degA = 1,1,1
 Value : degQ = 1,1,1

@@ -194,7 +194,7 @@ class Artery_Network:
                     A.append(Ai) ; Q.append(Qi)
                     gamma.append( self.Arteries[d].beta / self.Arteries[d].A0 )
                     sigma.append( 4 * np.sqrt( self.Arteries[d].beta / (2*rho*self.Arteries[d].A0)  )  )
-                NR_itmax = 1000
+                NR_itmax = 10000
                 tol = 1e-5
 
                 # Compute the boundary values of the parent and daughter vessels
@@ -204,9 +204,10 @@ class Artery_Network:
                     if np.linalg.norm(R) < tol:
                         break
                     dU = np.linalg.solve(K,-R)
-                    for i in range(0,self.numVessels):
+                    nn = int(len(dU)/2)
+                    for i in range(0,nn):
                         Q[i] += dU[i]
-                        A[i] += dU[i+self.numVessels]
+                        A[i] += dU[i+nn]
                 # Assign BC to the final BC list
                 Aout[p] = A[0]
                 Qout[p] = Q[0]
@@ -246,27 +247,33 @@ T = 2*0.165
 A0 = np.pi*r0**2
 time = np.linspace(0,(T/2+(0.25-0.165)),int(nt))
 dt = time[1]-time[0]
-Pin = 2e4*np.sin(2*np.pi*time/T) * np.heaviside(T/2-time,1)
+# Pin = 2e4*np.sin(2*np.pi*time/T) * np.heaviside(T/2-time,1)
+n = 4
+Pin = 2e4*np.sin(2*np.pi*time/T*n) * np.heaviside(T/n/2-time,1)
 beta = E*h0*np.sqrt(np.pi)
 Ainlet = (Pin*A0/beta+np.sqrt(A0))**2;
+
 # plt.plot(Ainlet)
 # plt.show()
+# sys.exit('')
+
 degA = 1
 degQ = 1
 
 # inputFile = "testInput.in"
 # inputFile = 'TwoSection.in'
-inputFile = 'yBifurcation.in'
+# inputFile = 'yBifurcation.in'
+inputFile = sys.argv[1]
 ArteryNetwork = Artery_Network(inputFile,dt,theta)
 
 tid = 0
 # nt = 1
 # for i in range(0,nt):
 for t in time:
+    print("Solving at timestep %d" % (tid))
     (Ain,Qin,Aout,Qout) = ArteryNetwork.getBoundaryConditions(Ainlet[tid])
     ArteryNetwork.solve( Ain, Aout, Qin, Qout )
 
-    print("Solving at timestep %d" % (tid))
 
     
     if tid % 10 == 0:
@@ -287,17 +294,10 @@ for t in time:
         plt.plot(Asol_2)
         plt.title("Vessel 2 tid="+str(tid))
         plt.ylim([0.6,1.1])
+
         plt.pause(1e-6)
         
     plt.clf()
-
-
-
-    # plt.plot(Asol)
-    # plt.ylim([0.6,1.1])
-    # plt.pause(1e-6)
-    # plt.cla()
-
     tid +=1
 
 
@@ -324,4 +324,3 @@ for t in time:
 # prettyPrint(K)
 # prettyPrint(R)
 # print(A.numVessels, A.connectivity, A.vesselIDs)
-
