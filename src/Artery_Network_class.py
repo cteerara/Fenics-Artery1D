@@ -175,7 +175,6 @@ class Artery_Network:
             # ds are the daughter vessels
             ds = self.connectivity[p]
             if ds != []: # If daughter exist
-                # print("Parent",p,"has daughters",ds)
                 # Get parent A,Q at the outlet
                 A = [] ; Q = [] ; gamma = [] ; sigma = []
                 (Ap,Qp) = self.Arteries[p].getBoundaryAQ("right")
@@ -191,11 +190,10 @@ class Artery_Network:
                     sigma.append( 4 * np.sqrt( self.Arteries[d].beta / (2*rho*self.Arteries[d].A0)  )  )
                 NR_itmax = 10000
                 tol = 1e-5
-
                 # Compute the boundary values of the parent and daughter vessels
                 for NR_it in range(0,NR_itmax):
                     (K,R) = self.getKR(A,Q,gamma,sigma,p,ds)
-                    print("Parent vessel: %d. NR iteration: %d. Residue = %f" %(p, NR_it, np.linalg.norm(R)) )
+                    # print("Parent vessel: %d. NR iteration: %d. Residue = %f" %(p, NR_it, np.linalg.norm(R)) )
                     if np.linalg.norm(R) < tol:
                         break
                     dU = np.linalg.solve(K,-R)
@@ -213,8 +211,6 @@ class Artery_Network:
                     i += 1
 
             else: # No daughters, compute no reflection BCs
-                # print("Parent",p,"has no daughters")
-
                 (ANoReflect, QNoReflect) = self.Arteries[p].getNoReflectionBC() 
                 Aout[p] = ANoReflect
                 Qout[p] = QNoReflect
@@ -231,95 +227,5 @@ class Artery_Network:
 
 
 
-# -- Time values
-theta = 0.5
-nt = 1000
-
-r0 = 0.5
-E = 3e6
-h0 = 0.05
-T = 2*0.165
-A0 = np.pi*r0**2
-time = np.linspace(0,(T/2+(0.25-0.165)),int(nt))
-dt = time[1]-time[0]
-# Pin = 2e4*np.sin(2*np.pi*time/T) * np.heaviside(T/2-time,1)
-freq = 8
-Pin = 2e4*np.sin(2*np.pi*time/T*freq) * np.heaviside(T/freq/2-time,1)
-beta = E*h0*np.sqrt(np.pi)
-Ainlet = (Pin*A0/beta+np.sqrt(A0))**2;
-
-# plt.plot(Ainlet)
-# plt.show()
-# sys.exit('')
-
-degA = 1
-degQ = 1
-
-# inputFile = "testInput.in"
-# inputFile = 'TwoSection.in'
-# inputFile = 'yBifurcation.in'
-inputFile = sys.argv[1]
-ArteryNetwork = Artery_Network(inputFile,dt,theta)
-
-tid = 0
-# nt = 1
-# for i in range(0,nt):
-for t in time:
-    print("Solving at timestep %d" % (tid))
-    (Ain,Qin,Aout,Qout) = ArteryNetwork.getBoundaryConditions(Ainlet[tid])
-    ArteryNetwork.solve( Ain, Aout, Qin, Qout )
-
-    if tid % 10 == 0:
-        plt.subplot(4,1,1)
-        Asol_0 = ArteryNetwork.Arteries[0].getSol("A").compute_vertex_values()
-        plt.plot(Asol_0)
-        plt.title("Vessel 0 tid="+str(tid))
-        plt.ylim([0.6,1.1])
-    
-        plt.subplot(4,1,2)
-        Asol_1 = ArteryNetwork.Arteries[1].getSol("A").compute_vertex_values()
-        plt.plot(Asol_1)
-        plt.title("Vessel 1 tid="+str(tid) )
-        plt.ylim([0.6,1.1])
-    
-        plt.subplot(4,1,3)
-        Asol_2 = ArteryNetwork.Arteries[2].getSol("A").compute_vertex_values()
-        plt.plot(Asol_2)
-        plt.title("Vessel 2 tid="+str(tid))
-        plt.ylim([0.6,1.1])
-
-        plt.subplot(4,1,4)
-        Asol_3 = ArteryNetwork.Arteries[3].getSol("A").compute_vertex_values()
-        plt.plot(Asol_3)
-        plt.title("Vessel 3 tid="+str(tid))
-        plt.ylim([0.6,1.1])
-
-        plt.pause(1e-6)
-        
-    plt.clf()
-    tid +=1
 
 
-
-# print("Ain ",Ain)
-# print("Aout",Aout)
-# print("Qin ",Qin)
-# print("Qout",Qout)
-# print(ArteryNetwork.connectivity)
-
-
-
-# print(A.connectivity)
-# (A_p, Q_p) = A.Arteries[0].getBoundaryAQ("right")
-# (A_1, Q_1) = A.Arteries[1].getBoundaryAQ("left") 
-# (lam1_p, lam2_p) = A.Arteries[0].getEigenvalues(A_p,Q_p)
-# (lam1_1, lam2_1) = A.Arteries[1].getEigenvalues(A_1,Q_1)
-# gamma_p = A.Arteries[0].beta / A.Arteries[0].A0
-# gamma_1 = A.Arteries[1].beta / A.Arteries[1].A0
-# sigma_p = 4 * np.sqrt(A.Arteries[0].beta/(2*rho*A.Arteries[0].A0))
-# sigma_1 = 4 * np.sqrt(A.Arteries[1].beta/(2*rho*A.Arteries[1].A0))
-
-# (K,R) = A.getKR([A_p,A_1], [Q_p,Q_1], [gamma_p,gamma_1], [sigma_p,sigma_1])
-# prettyPrint(K)
-# prettyPrint(R)
-# print(A.numVessels, A.connectivity, A.vesselIDs)
