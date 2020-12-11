@@ -1,0 +1,34 @@
+# Connectivity of the tree structure
+# format is p : d1,d2,d3,...,dn
+# where p is the ID of the parent vessel
+# d1,d2,...,dn are the ids of the daughter vessels. Can be as many as you'd like
+# vessel ID must start from 0 and the ID cannot be skipped, e.g., 0,1,2,3 is OK while 0,1,2,4 is NOT OK.
+# vessel ID 0 must be present and is considered the "source" vessel where your inlet boundary condition will be applied
+# parent vessels must have ID lower than all the daughter vessels
+# if the vessel does not have daughter, you can omit it from the input
+
+#                |---4---
+#         |---1--- 
+#         |      |---5---
+#         |
+# ---0-------2---|---6---
+#         |
+#         ---3---|---7---
+
+Connectivity : 0 : 1,2,3 
+Connectivity : 1 : 4,5
+Connectivity : 2 : 6
+Connectivity : 3 : 7
+
+# rho = 1
+# nu = 0.035
+# Arteries     0    , 1    , 2    , 3    , 4    , 5    , 6    , 7  
+Value : L    = 15   , 15   , 15   , 15   , 15   , 15   , 15   , 15   
+Value : ne   = 128  , 128  , 128  , 128  , 128  , 128  , 128  , 128 
+Value : r0   = 0.5  , 0.5  , 0.5  , 0.5  , 0.5  , 0.5  , 0.5  , 0.5 
+Value : Q0   = 0    , 0    , 0    , 0    , 0    , 0    , 0    , 0  
+Value : E    = 3e6  , 3e6  , 3e6  , 3e6  , 3e6  , 3e6  , 3e6  , 30e6
+Value : h0   = 0.05 , 0.05 , 0.05 , 0.05 , 0.05 , 0.05 , 0.05 , 0.05
+Value : degA = 1    , 1    , 1    , 1    , 1    , 1    , 1    , 1  
+Value : degQ = 1    , 1    , 1    , 1    , 1    , 1    , 1    , 1 
+

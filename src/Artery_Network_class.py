@@ -42,8 +42,9 @@ class Artery_Network:
 
 
     
-    def getKR(self,A,Q,gamma,sigma):
+    def getKR(self,A,Q,gamma,sigma,parents,daughters):
         ''' A and Q are vectors containing boundary values of A and Q to be solved in the compatibility condition  '''
+        parentID = parents
         n = len(A)-1
         K = np.zeros( (2*n+2,2*n+2) )
         Ap = A[0] ; Qp = Q[0]
@@ -73,32 +74,29 @@ class Artery_Network:
         K[ (n+2):(2*n+2) , (n+2):(2*n+2) ] = Ki22
 
         R = np.zeros( 2*n+2 )
-        (A_p_0, Q_p_0) = self.Arteries[0].getBoundaryAQ("right")
-        (lam1_p, lam2_p) = self.Arteries[0].getEigenvalues( A_p_0, Q_p_0 )
-        (W1_p, W2_p) = self.Arteries[0].getCharacteristics( self.Arteries[0].getAatPoint( self.Arteries[0].L - lam1_p*self.Arteries[0].dt ) , \
-                                                            self.Arteries[0].getQatPoint( self.Arteries[0].L - lam1_p*self.Arteries[0].dt )  )
-        ptp = gammap*( np.sqrt(Ap) - np.sqrt(self.Arteries[0].A0) ) + 1/2*(Qp/Ap)**2
+        (A_p_0, Q_p_0) = self.Arteries[parentID].getBoundaryAQ("right")
+        (lam1_p, lam2_p) = self.Arteries[parentID].getEigenvalues( A_p_0, Q_p_0 )
+        (W1_p, W2_p) = self.Arteries[parentID].getCharacteristics( self.Arteries[parentID].getAatPoint( self.Arteries[parentID].L - lam1_p*self.Arteries[parentID].dt ) , \
+                                                            self.Arteries[parentID].getQatPoint( self.Arteries[parentID].L - lam1_p*self.Arteries[parentID].dt )  )
+        ptp = gammap*( np.sqrt(Ap) - np.sqrt(self.Arteries[parentID].A0) ) + 1/2*(Qp/Ap)**2
         R[0] = Qp
         for i in range(1,n+1):
+            d = daughters[i-1]
             R[0] -= Q[i]
-            pti = gamma[i]*( np.sqrt(A[i]) - np.sqrt(self.Arteries[i].A0) ) + 1/2*(Q[i]/A[i])**2
+            pti = gamma[i]*( np.sqrt(A[i]) - np.sqrt(self.Arteries[d].A0) ) + 1/2*(Q[i]/A[i])**2
             R[i] = ptp - pti
 
         
         R[n+1] = alpha*Qp/Ap + sigmap*Ap**(1./4) - W1_p
         for i in range(1,n+1):
-            (A_p_i, Q_p_i) = self.Arteries[i].getBoundaryAQ("left")
-            (lam1_i, lam2_i) = self.Arteries[i].getEigenvalues( A_p_i, Q_p_i )
-            (W1_i, W2_i) = self.Arteries[i].getCharacteristics( self.Arteries[i].getAatPoint( -lam2_i*self.Arteries[i].dt ) , \
-                                                                self.Arteries[i].getQatPoint( -lam2_i*self.Arteries[i].dt ) )
+            d = daughters[i-1]
+            (A_p_i, Q_p_i) = self.Arteries[d].getBoundaryAQ("left")
+            (lam1_i, lam2_i) = self.Arteries[d].getEigenvalues( A_p_i, Q_p_i )
+            (W1_i, W2_i) = self.Arteries[d].getCharacteristics( self.Arteries[d].getAatPoint( -lam2_i*self.Arteries[d].dt ) , \
+                                                                self.Arteries[d].getQatPoint( -lam2_i*self.Arteries[d].dt ) )
             j = i+n+1
             R[j] = alpha*Q[i]/A[i] - sigma[i]*A[i]**(1./4) - W2_i
         return (K,R)
-
-
-
-
-
 
     def getParameters(self):
         fid = open(self.input)
@@ -115,7 +113,6 @@ class Artery_Network:
                 paramDict[ll[0].strip()] = str2lst(ll[1].strip())
         fid.close()
         return paramDict
-
 
     def getConnectivity(self):
         fid = open(self.input)
@@ -178,9 +175,7 @@ class Artery_Network:
             # ds are the daughter vessels
             ds = self.connectivity[p]
             if ds != []: # If daughter exist
-
                 # print("Parent",p,"has daughters",ds)
-
                 # Get parent A,Q at the outlet
                 A = [] ; Q = [] ; gamma = [] ; sigma = []
                 (Ap,Qp) = self.Arteries[p].getBoundaryAQ("right")
@@ -199,7 +194,7 @@ class Artery_Network:
 
                 # Compute the boundary values of the parent and daughter vessels
                 for NR_it in range(0,NR_itmax):
-                    (K,R) = self.getKR(A,Q,gamma,sigma)
+                    (K,R) = self.getKR(A,Q,gamma,sigma,p,ds)
                     print("Parent vessel: %d. NR iteration: %d. Residue = %f" %(p, NR_it, np.linalg.norm(R)) )
                     if np.linalg.norm(R) < tol:
                         break
@@ -248,8 +243,8 @@ A0 = np.pi*r0**2
 time = np.linspace(0,(T/2+(0.25-0.165)),int(nt))
 dt = time[1]-time[0]
 # Pin = 2e4*np.sin(2*np.pi*time/T) * np.heaviside(T/2-time,1)
-n = 4
-Pin = 2e4*np.sin(2*np.pi*time/T*n) * np.heaviside(T/n/2-time,1)
+freq = 8
+Pin = 2e4*np.sin(2*np.pi*time/T*freq) * np.heaviside(T/freq/2-time,1)
 beta = E*h0*np.sqrt(np.pi)
 Ainlet = (Pin*A0/beta+np.sqrt(A0))**2;
 
@@ -274,25 +269,29 @@ for t in time:
     (Ain,Qin,Aout,Qout) = ArteryNetwork.getBoundaryConditions(Ainlet[tid])
     ArteryNetwork.solve( Ain, Aout, Qin, Qout )
 
-
-    
     if tid % 10 == 0:
-        plt.subplot(3,1,1)
+        plt.subplot(4,1,1)
         Asol_0 = ArteryNetwork.Arteries[0].getSol("A").compute_vertex_values()
         plt.plot(Asol_0)
         plt.title("Vessel 0 tid="+str(tid))
         plt.ylim([0.6,1.1])
     
-        plt.subplot(3,1,2)
+        plt.subplot(4,1,2)
         Asol_1 = ArteryNetwork.Arteries[1].getSol("A").compute_vertex_values()
         plt.plot(Asol_1)
         plt.title("Vessel 1 tid="+str(tid) )
         plt.ylim([0.6,1.1])
     
-        plt.subplot(3,1,3)
+        plt.subplot(4,1,3)
         Asol_2 = ArteryNetwork.Arteries[2].getSol("A").compute_vertex_values()
         plt.plot(Asol_2)
         plt.title("Vessel 2 tid="+str(tid))
+        plt.ylim([0.6,1.1])
+
+        plt.subplot(4,1,4)
+        Asol_3 = ArteryNetwork.Arteries[3].getSol("A").compute_vertex_values()
+        plt.plot(Asol_3)
+        plt.title("Vessel 3 tid="+str(tid))
         plt.ylim([0.6,1.1])
 
         plt.pause(1e-6)

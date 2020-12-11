@@ -15,7 +15,7 @@ Connectivity : 0 : 1
 Connectivity : 1 : 2
 
 Value : L  = 5,5,5
-Value : ne = 256,256,256
+Value : ne = 128,128,128
 Value : r0 = 0.5,0.5,0.5
 Value : Q0 = 0,0,0
 Value : E  = 3e6,3e6,3e6
