@@ -16,4 +16,14 @@ def prettyPrint(A):
     Table.columns = ['']*Table.shape[1]
     print(Table.to_string(index=False))
 
+def str2lst(strs):
+    ''' Convert a string of comma delimited numbers into a list of those numbers  '''
+    lst = []
+    for s in strs.strip().split(","):
+        try:
+            lst.append(int(s))
+        except:
+            lst.append(float(s))
+    return lst
+
 

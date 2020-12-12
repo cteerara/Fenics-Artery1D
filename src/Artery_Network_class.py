@@ -9,24 +9,21 @@ plt.rcParams.update({'font.size': 12})
 
 fe.set_log_level(40)
 
-def str2lst(strs):
-    ''' Convert a string of comma delimited numbers into a list of those numbers  '''
-    lst = []
-    for s in strs.strip().split(","):
-        try:
-            lst.append(int(s))
-        except:
-            lst.append(float(s))
-    return lst
-
-# Artyp = Artery(L, ne, r0, Q0,   E, h0, theta, dt, degA=degA,degQ=degQ)
 class Artery_Network:
+
     ''' Class defines the artery network and its connectivity '''
-    def __init__(self, inputFile, dt, theta):
+    def __init__(self, inputFile, dt, theta, nt=None):
         self.input = inputFile
         (self.numVessels, self.connectivity, self.vesselIDs) = self.getConnectivity()
         self.paramDict = self.getParameters()
         self.Arteries = []
+        ne_max = 0
+        self.E_array  = np.zeros(self.numVessels)
+        self.h0_array = np.zeros(self.numVessels) 
+        self.id_array = np.zeros(self.numVessels)
+        self.ne_array = np.zeros(self.numVessels)
+        self.A0_array = np.zeros(self.numVessels)
+        self.L_array  = np.zeros(self.numVessels)
         for i in range(0,self.numVessels):
             L    = self.paramDict["L"][i]
             ne   = self.paramDict["ne"][i]
@@ -38,8 +35,19 @@ class Artery_Network:
             degQ = self.paramDict["degQ"][i]
             Arty = Artery(L,ne,r0,Q0,E,h0,theta,dt,degA=degA,degQ=degQ)
             self.Arteries.append(Arty)
-            
-
+            self.E_array[i]  = E
+            self.h0_array[i] = h0
+            self.id_array[i] = self.vesselIDs[i]
+            self.ne_array[i] = ne
+            self.A0_array[i] = np.pi*r0**2
+            self.L_array[i]  = L
+            if ne > ne_max:
+                ne_max = ne
+        
+        # -- Initialize output arrays with dimensions (nt,ne+1,nVessels)
+        if nt is not None:
+            self.AoutArr = np.zeros( (nt, ne_max+1, self.numVessels) ) 
+            self.QoutArr = np.zeros( (nt, ne_max+1, self.numVessels) )
 
     
     def getKR(self,A,Q,gamma,sigma,parents,daughters):
@@ -217,9 +225,20 @@ class Artery_Network:
 
         return (Ain,Qin,Aout,Qout)
 
-    def solve(self,AinBC, AoutBC, QinBC, QoutBC):
+    def solve(self,AinBC, AoutBC, QinBC, QoutBC, tid):
         for i in range(0,self.numVessels):
             self.Arteries[i].solve( Ain=AinBC[i] , Aout=AoutBC[i] , Qin=QinBC[i] , Qout=QoutBC[i] )
+            A = self.Arteries[i].getSol("A").compute_vertex_values()
+            Q = self.Arteries[i].getSol("Q").compute_vertex_values()
+            self.AoutArr[tid,0:(self.Arteries[i].ne+1),i] = A
+            self.QoutArr[tid,0:(self.Arteries[i].ne+1),i] = Q
+
+    def saveOutput_matlab(self,tag,saveMatlab=False):
+        np.save(tag+'_A.npy',self.AoutArr)
+        np.save(tag+'_Q.npy',self.QoutArr)
+        if saveMatlab:
+            import scipy.io
+            scipy.io.savemat(tag+".mat",dict( A=self.AoutArr, Q=self.QoutArr, E=self.E_array, h0=self.h0_array, IDs=self.id_array, ne=self.ne_array, A0=self.A0_array, L=self.L_array  ))
 
         
 

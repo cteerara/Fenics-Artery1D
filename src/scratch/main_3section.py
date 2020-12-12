@@ -9,7 +9,7 @@ from Artery_class import *
 fe.set_log_level(40)
 
 # -- Constants
-L = 15
+L = 5
 ne = 2**7
 r0 = 0.5
 E = 3e6
@@ -34,7 +34,7 @@ degA = 1
 degQ = 1
 
 Artyp = Artery(L, ne, r0, Q0, E, h0, theta, dt, degA=degA,degQ=degQ)
-Arty1 = Artery(L, ne, r0, Q0, E, h0, theta, dt, degA=degA,degQ=degQ)
+Arty1 = Artery(L, ne, r0, Q0, 100*E, h0, theta, dt, degA=degA,degQ=degQ)
 Arty2 = Artery(L, ne, r0, Q0, E, h0, theta, dt, degA=degA,degQ=degQ)
 
 
