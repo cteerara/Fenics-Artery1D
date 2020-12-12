@@ -8,8 +8,19 @@
 # if the vessel does not have daughter, you can omit it from the input
 
 
-# rho = 1
-# nu = 0.035
+# L is the length of the domain
+# ne is the number of elements
+# r0 is the vessel's initial radius
+# E is the vessel's elastic modulus
+# h0 is the vessel's wall thickness
+# degA and degQ are the interpolating polynomial degree
+
+# Y shaped bifurcation
+#         ---1--- 
+#         |
+# ---0----|
+#         |
+#         ---2---
 
 Connectivity : 0 : 1,2 
 Value : L  = 5,10,10
@@ -21,12 +32,3 @@ Value : h0 = 0.05,0.05,0.05
 Value : degA = 1,1,1
 Value : degQ = 1,1,1
 
-# Connectivity : 0 : 1,2 
-# Value : L  = 15,15,15
-# Value : ne = 128,128,128
-# Value : r0 = 0.5,0.5,0.5
-# Value : Q0 = 0,0,0
-# Value : E  = 3e6,3e6,3e6
-# Value : h0 = 0.05,0.05,0.05
-# Value : degA = 1,1,1
-# Value : degQ = 1,1,1
