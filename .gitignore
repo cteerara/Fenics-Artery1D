@@ -5,3 +5,9 @@ Papers
 Artery1D_Matlab
 bloodflow
 *.npy
+*.pvd
+*.vtu
+LaTeX
+*.mat
+*.png
+*.m
