@@ -9,7 +9,7 @@ fe.set_log_level(40)
 
 # -- Set up constants
 theta = 0.5
-nt = 1000
+nt = 5000
 r0 = 0.5
 E = 3e6
 h0 = 0.05
@@ -19,8 +19,9 @@ time = np.linspace(0,(T/2+(0.25-0.165)),int(nt))
 dt = time[1]-time[0]
 
 # -- Create inlet boundary conditions
-freq = 1
+freq = 3
 Pin = 2e4*np.sin(2*np.pi*time/T*freq) * np.heaviside(T/freq/2-time,1)
+# Pin = 2e4*np.sin(2*np.pi*time/T*freq) #* np.heaviside(T/freq/2-time,1)
 beta = E*h0*np.sqrt(np.pi)
 Ainlet = (Pin*A0/beta+np.sqrt(A0))**2;
 

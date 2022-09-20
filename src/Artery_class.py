@@ -54,7 +54,6 @@ class Artery:
         HdUdz0 = matMult(H0,[self.du01, self.du02])
         HdUdzn = matMult(Hn,[self.dun1, self.dun2])
 
-
         # -- Setup weakform
         wf  = -self.un1*self.v1 - self.un2*self.v2
         wf +=  self.u01*self.v1 + self.u02*self.v2

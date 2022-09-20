@@ -5,7 +5,7 @@ pi = np.pi
 # -- Physical parameters
 rho = 1 # g/cm^3
 alpha = 1
-nu = 0.035 
+nu = 0.04 
 KR = 8*nu*pi
 
 
