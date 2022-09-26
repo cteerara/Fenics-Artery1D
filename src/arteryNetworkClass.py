@@ -2,17 +2,26 @@ import fenics as fe
 import numpy as np
 import matplotlib.pyplot as plt
 import sys
-from Artery_class import *
-from Global import *
+from arteryClass import *
 from utils import *
+import pickle
 plt.rcParams.update({'font.size': 12})
 
 fe.set_log_level(40)
 
-class Artery_Network:
+class arteryNetwork:
 
     ''' Class defines the artery network and its connectivity '''
-    def __init__(self, inputFile, dt, theta, nt=None):
+    def __init__(self, inputFile, dt, theta, nt, rho, nu, alpha):
+
+        # Fluid properties 
+        self.fluidProp = {}
+        self.fluidProp['rho'] = rho
+        self.fluidProp['nu'] = nu
+        self.fluidProp['alpha'] = alpha
+        self.fluidProp['KR'] = 8*nu*np.pi
+
+        # Read individual vessel properties and init each artery
         self.input = inputFile
         (self.numVessels, self.connectivity, self.vesselIDs) = self.getConnectivity()
         self.paramDict = self.getParameters()
@@ -33,7 +42,9 @@ class Artery_Network:
             h0   = self.paramDict["h0"][i]
             degA = self.paramDict["degA"][i]
             degQ = self.paramDict["degQ"][i]
-            Arty = Artery(L,ne,r0,Q0,E,h0,theta,dt,degA=degA,degQ=degQ)
+            Arty = Artery(L, ne, r0, Q0, E, h0, \
+                          theta, dt, self.fluidProp, \
+                          degA=degA,degQ=degQ)
             self.Arteries.append(Arty)
             self.E_array[i]  = E
             self.h0_array[i] = h0
@@ -44,14 +55,17 @@ class Artery_Network:
             if ne > ne_max:
                 ne_max = ne
         
-        # -- Initialize output arrays with dimensions (nt,ne+1,nVessels)
+        # Initialize output arrays with dimensions (nt,ne+1,nVessels)
         if nt is not None:
             self.AoutArr = np.zeros( (nt, ne_max+1, self.numVessels) ) 
             self.QoutArr = np.zeros( (nt, ne_max+1, self.numVessels) )
 
     
     def getKR(self,A,Q,gamma,sigma,parents,daughters):
+
         ''' A and Q are vectors containing boundary values of A and Q to be solved in the compatibility condition  '''
+
+        alpha = self.fluidProp['alpha']
         parentID = parents
         n = len(A)-1
         K = np.zeros( (2*n+2,2*n+2) )
@@ -176,6 +190,7 @@ class Artery_Network:
             Aout.append(None)
             Qout.append(None)
         Ain[0] = inputArea
+        rho = self.fluidProp['rho']
 
         # Get boundary contitions at the interface between vessels
         for p in range(0,self.numVessels):
@@ -233,9 +248,10 @@ class Artery_Network:
             self.AoutArr[tid,0:(self.Arteries[i].ne+1),i] = A
             self.QoutArr[tid,0:(self.Arteries[i].ne+1),i] = Q
 
-    def saveOutput_matlab(self,tag,saveMatlab=False):
+    def saveOutput(self,tag,saveMatlab=False):
         np.save(tag+'_A.npy',self.AoutArr)
         np.save(tag+'_Q.npy',self.QoutArr)
+        pickle.dump( self.paramDict, open(tag+'_properties.pkl', 'wb') )
         if saveMatlab:
             import scipy.io
             scipy.io.savemat(tag+".mat",dict( A=self.AoutArr, Q=self.QoutArr, E=self.E_array, h0=self.h0_array, IDs=self.id_array, ne=self.ne_array, A0=self.A0_array, L=self.L_array  ))

@@ -3,15 +3,15 @@ import numpy as np
 import matplotlib.pyplot as plt
 import sys
 from utils import *
-from Global import *
 
 class Artery:
     '''
     This class contains the artery's properties 
     '''
-    def __init__(self, L, ne, r0, Q0, E, h0, theta, dt,degA=1, degQ=1):
+    def __init__(self, L, ne, r0, Q0, E, h0, theta, dt, fluidProp, degA=1, degQ=1):
 
-        # -- Setup domain
+        # Setup domain
+        self.fluidProp = fluidProp
         self.L = L
         self.ne = ne
         self.dt = dt
@@ -20,7 +20,7 @@ class Artery:
         AE = fe.FiniteElement("Lagrange", cell=self.mesh.ufl_cell(), degree=degA)
         ME = fe.MixedElement([AE,QE])
 
-        # -- Setup functionspaces
+        # Setup functionspaces
         self.V  = fe.FunctionSpace(self.mesh,ME)
         self.V_A = self.V.sub(0)
         self.V_Q = self.V.sub(1)
@@ -35,7 +35,7 @@ class Artery:
         self.U0 = fe.Function(self.V)
         self.Un = fe.Function(self.V)
 
-        # -- Setup initial conditions
+        # Setup initial conditions
         self.U0.assign( fe.Expression( ( 'A0', 'Q0' ) , A0=self.A0, Q0=Q0, degree=1 ) )
         self.Un.assign( fe.Expression( ( 'A0', 'Q0' ) , A0=self.A0, Q0=Q0, degree=1 ) )
         (self.u01, self.u02) = fe.split(self.U0)
@@ -46,7 +46,7 @@ class Artery:
         self.dun2 = fe.grad(self.un2)[0]
         (self.W1_initial,self.W2_initial) = self.getCharacteristics(self.A0,self.Q0) 
 
-        # -- Setup weakform terms
+        # Setup weakform terms
         B0     = self.getB(self.u01, self.u02)
         Bn     = self.getB(self.un1, self.un2)
         H0     = self.getH(self.u01, self.u02)
@@ -54,7 +54,7 @@ class Artery:
         HdUdz0 = matMult(H0,[self.du01, self.du02])
         HdUdzn = matMult(Hn,[self.dun1, self.dun2])
 
-        # -- Setup weakform
+        # Setup weakform
         wf  = -self.un1*self.v1 - self.un2*self.v2
         wf +=  self.u01*self.v1 + self.u02*self.v2
         wf += -dt*theta     * ( HdUdzn[0] + Bn[0] )*self.v1 - dt*theta     * ( HdUdzn[1] + Bn[1] )*self.v2 
@@ -65,9 +65,12 @@ class Artery:
 
     
     def getB(self,A,Q):
+        KR = self.fluidProp['KR']
         return [0,KR*Q/A]
 
     def getH(self,A,Q):
+        rho = self.fluidProp['rho']
+        alpha = self.fluidProp['alpha']
         beta = self.beta
         A0 = self.A0
         H11=0 ; H12 = 1
@@ -76,21 +79,26 @@ class Artery:
 
 
     def getWavespeed(self,A):
+        rho = self.fluidProp['rho']
         return np.sqrt(self.beta/(2*rho*self.A0))*A**(1./4.)
 
     def getCharacteristics(self,A,Q):
+        alpha = self.fluidProp['alpha']
         c  = self.getWavespeed(A)
         W1 = alpha*Q/A + 4*c
         W2 = alpha*Q/A - 4*c
         return (W1,W2)
 
     def getAQfromChar(self,W1,W2):
+        rho = self.fluidProp['rho']
         A = (2*rho*self.A0/self.beta)**2 * ( (W1-W2)/8 )**4
         Q = A * (W1+W2)/2
         return (A,Q)
 
     def getEigenvalues(self,A,Q):
         ''' Return eigenvalues of H with input values A and Q '''
+        rho = self.fluidProp['rho']
+        alpha = self.fluidProp['alpha']
         c = self.getWavespeed(A)
         lam1 = alpha*Q/A + np.sqrt( c**2 + alpha*(alpha-1)*(Q/A)**2 )
         lam2 = alpha*Q/A - np.sqrt( c**2 + alpha*(alpha-1)*(Q/A)**2 )
